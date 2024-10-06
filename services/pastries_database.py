@@ -77,16 +77,7 @@ async def create_pasteleria_with_admin(
         session.commit()
 
         return {
-            "pasteleria": {
-                "id": id_pasteleria,
-                "nombre": nombre,
-                "email": email
-            },
-            "propietario": {
-                "usuario": usuario,
-                "rol": "propietario",
-                "clave_env": 1234
-            }
+            "usuario": usuario
         }
 
     except Exception as exception:

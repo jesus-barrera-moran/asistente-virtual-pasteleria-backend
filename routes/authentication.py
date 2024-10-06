@@ -12,11 +12,26 @@ router = APIRouter()
 @router.post("/token")
 async def login_for_access_token(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-) -> Token:
+) -> dict:
     user = await authenticate_user(form_data.username, form_data.password)
 
     if not user:
         raise INCORRECT_CREDENTIALS_EXCEPTION
+    
+    user_data = {
+        "id_usuario": user.id,
+        "id_pasteleria": user.id_pasteleria,
+        "id_rol": user.id_rol,
+        "usuario": user.usuario,
+        "email": user.email,
+        "nombre": user.nombre,
+        "apellido": user.apellido,
+        "deshabilitado": user.deshabilitado,
+    }
 
     access_token = create_access_token(data={"sub": user.usuario})
-    return Token(access_token=access_token, token_type="bearer")
+
+    return {
+        "token": Token(access_token=access_token, token_type="bearer"),
+        "user": user_data
+    }
