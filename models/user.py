@@ -1,10 +1,14 @@
 from pydantic import BaseModel
 from typing import Optional
+from uuid import UUID
 
 class User(BaseModel):
-    username: str
+    id: Optional[int] = None
+    id_pasteleria: Optional[UUID] = None
+    id_rol: Optional[int] = None
+    usuario: Optional[str] = None
     email: Optional[str] = None
-    role: Optional[str] = None
-    first_name: Optional[str] = None
-    last_name: Optional[str] = None
-    disabled: Optional[bool] = None
+    clave_env: Optional[str] = None
+    nombre: Optional[str] = None
+    apellido: Optional[str] = None
+    deshabilitado: Optional[bool] = None

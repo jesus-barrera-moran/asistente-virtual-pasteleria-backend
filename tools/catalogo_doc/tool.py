@@ -1,5 +1,6 @@
 import os
 
+from uuid import UUID
 from langchain.tools.retriever import create_retriever_tool
 from langchain_openai import OpenAIEmbeddings
 from langchain_community.vectorstores import FAISS
@@ -9,15 +10,17 @@ from langchain_text_splitters import CharacterTextSplitter
 from services.files_storage import read_file
 from config.general import general_configuration
 
-def tool():
-    os.makedirs('documents', exist_ok=True)
+def tool(id_pasteleria: UUID):
+    id_pasteleria_str = str(id_pasteleria)
+    folder_name = f"documents/{id_pasteleria_str}"
+    os.makedirs(folder_name, exist_ok=True)
     file_data = read_file(
-        general_configuration["bucket_name"],
+        id_pasteleria_str,
         general_configuration["file_name"]["catalog"]
     )
 
     file_content = file_data["content"].decode('utf-8')
-    file_path = os.path.join('documents', file_data["name"])
+    file_path = os.path.join(folder_name, file_data["name"])
 
     with open(file_path, "w") as file:
         file.write(file_content)

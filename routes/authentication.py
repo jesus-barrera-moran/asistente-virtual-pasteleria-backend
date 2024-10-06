@@ -18,5 +18,5 @@ async def login_for_access_token(
     if not user:
         raise INCORRECT_CREDENTIALS_EXCEPTION
 
-    access_token = create_access_token(data={"sub": user.username})
+    access_token = create_access_token(data={"sub": user.usuario})
     return Token(access_token=access_token, token_type="bearer")

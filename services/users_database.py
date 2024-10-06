@@ -3,10 +3,11 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.sql import text
 from database.engine import connect_with_connector
 from typing import Optional
+from uuid import UUID
 
 from utils.exceptions import NOT_FOUND_USER_EXCEPTION
 
-db_name = os.environ["USERS_DATABASE_NAME"]
+db_name = os.environ["BUSINESS_DATABASE_NAME"]
 
 async def get_all_users():
     engine = connect_with_connector(db_name)
@@ -14,7 +15,7 @@ async def get_all_users():
     session = Session()
 
     try:
-        result = session.execute(text("SELECT * FROM profile"))
+        result = session.execute(text("SELECT * FROM usuario"))
         rows = result.fetchall()
 
         users = []
@@ -35,7 +36,7 @@ async def get_user_by_username(username: str):
 
     try:
         result = session.execute(
-            text("SELECT * FROM profile WHERE username = :username"),
+            text("SELECT * FROM usuario WHERE usuario = :username"),
             {"username": username}
         )
 
@@ -57,7 +58,7 @@ async def update_user_status(username: str, disabled: bool):
 
     try:
         result = session.execute(
-            text("UPDATE profile SET disabled = :disabled WHERE username = :username"),
+            text("UPDATE usuario SET deshabilitado = :disabled WHERE usuario = :username"),
             {"username": username, "disabled": disabled}
         )
 
@@ -72,15 +73,26 @@ async def update_user_status(username: str, disabled: bool):
     finally:
         session.close()
 
-async def update_user_role(username: str, role: str):
+async def update_user_role(username: str, id_role: str):
     engine = connect_with_connector(db_name)
     Session = sessionmaker(bind=engine)
     session = Session()
 
     try:
+        result_role = session.execute(
+            text("SELECT id FROM rol WHERE id = :id_role"),
+            {"id_role": id_role}
+        )
+        role_row = result_role.fetchone()
+
+        if role_row is None:
+            raise Exception("Role not found")
+
+        id_role = role_row[0]
+
         result = session.execute(
-            text("UPDATE profile SET role = :role WHERE username = :username"),
-            {"username": username, "role": role}
+            text("UPDATE usuario SET id_rol = :id_role WHERE usuario = :username"),
+            {"username": username, "id_role": id_role}
         )
 
         session.commit()
@@ -88,7 +100,7 @@ async def update_user_role(username: str, role: str):
         if result.rowcount == 0:
             raise NOT_FOUND_USER_EXCEPTION
 
-        return {"username": username, "role": role}
+        return {"username": username, "id_role": id_role}
     except Exception as exception:
         raise exception
     finally:
@@ -110,7 +122,7 @@ async def update_user(username: str, new_hashed_password: str, email: Optional[s
 
         result = session.execute(
             text(
-                "UPDATE profile SET hashed_password = :new_hashed_password, email = :email, first_name = :first_name, last_name = :last_name WHERE username = :username"
+                "UPDATE usuario SET clave_env = :new_hashed_password, email = :email, nombre = :first_name, apellido = :last_name WHERE usuario = :username"
             ),
             update_data
         )
@@ -133,7 +145,7 @@ async def user_already_exists(username: str):
 
     try:
         result = session.execute(
-            text("SELECT * FROM profile WHERE username = :username"),
+            text("SELECT * FROM usuario WHERE usuario = :username"),
             {"username": username}
         )
 
@@ -143,23 +155,107 @@ async def user_already_exists(username: str):
     finally:
         session.close()
 
-async def create_user(username: str, hashed_password: str, email: Optional[str] = None, role: Optional[str] = None, first_name: Optional[str] = None, last_name: Optional[str] = None, disabled: Optional[bool] = None):
+async def create_user(id_pasteleria: UUID, username: str, hashed_password: str, deshabilitado: bool, email: Optional[str] = None, first_name: Optional[str] = None, last_name: Optional[str] = None):
     engine = connect_with_connector(db_name)
     Session = sessionmaker(bind=engine)
     session = Session()
 
     try:
+        # Obtener el ID del rol "empleado"
+        result_role = session.execute(
+            text("SELECT id FROM rol WHERE nombre = 'empleado'")
+        )
+        role_row = result_role.fetchone()
+
+        if role_row is None:
+            raise Exception("Role not found")
+
+        # role_row es una tupla, por lo que extraemos el valor del ID del rol
+        id_role = role_row[0]
+
+        # Insertar el usuario en la base de datos
         session.execute(
             text(
-                "INSERT INTO profile (username, hashed_password, email, role, first_name, last_name, disabled) VALUES (:username, :hashed_password, :email, :role, :first_name, :last_name, :disabled)"
+                "INSERT INTO usuario (id_pasteleria, id_rol, usuario, clave_env, deshabilitado, email, nombre, apellido) "
+                "VALUES (:id_pasteleria, :id_role, :username, :hashed_password, :disabled, :email, :first_name, :last_name)"
             ),
-            {"username": username, "hashed_password": hashed_password, "email": email, "role": role, "first_name": first_name, "last_name": last_name, "disabled": disabled}
+            {
+                "id_pasteleria": id_pasteleria,
+                "id_role": id_role,
+                "username": username,
+                "hashed_password": hashed_password,
+                "disabled": deshabilitado,
+                "email": email,
+                "first_name": first_name,
+                "last_name": last_name
+            }
         )
 
+        # Confirmar la transacción
         session.commit()
 
-        return {"username": username, "email": email, "role": role, "first_name": first_name, "last_name": last_name, "disabled": disabled}
+        # Retornar los datos del usuario creado
+        return {
+            "id_pasteleria": id_pasteleria,
+            "id_rol": id_role,
+            "usuario": username,
+            "deshabilitado": deshabilitado,
+            "email": email,
+            "nombre": first_name,
+            "apellido": last_name
+        }
+
     except Exception as exception:
+        # En caso de error, hacer rollback
+        session.rollback()
         raise exception
     finally:
+        # Cerrar la sesión
         session.close()
+
+async def is_user_admin_or_owner(username: str):
+    engine = connect_with_connector(db_name)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    try:
+        # Consulta para obtener el rol del usuario
+        result = session.execute(
+            text(
+                "SELECT r.nombre FROM usuario u "
+                "JOIN rol r ON u.id_rol = r.id "
+                "WHERE u.usuario = :username"
+            ),
+            {"username": username}
+        )
+
+        row = result.fetchone()
+
+        if row is None:
+            raise NOT_FOUND_USER_EXCEPTION("Usuario no encontrado")
+
+        role_name = row[0]
+        # Verificar si el rol es administrador o propietario
+        if role_name.lower() in ["admin", "propietario"]:
+            return True
+
+        return False
+
+    except Exception as e:
+        raise e
+    finally:
+        session.close()
+
+# Mock temporary implementation
+def get_user_role_name(id_rol: str):
+    rol_number = int(id_rol)
+    if rol_number == 11:
+        return "admin"
+    elif rol_number == 12:
+        return "empleado"
+    elif rol_number == 13:
+        return "cliente"
+    elif rol_number == 17:
+        return "propietario"
+    else:
+        return "unknown"

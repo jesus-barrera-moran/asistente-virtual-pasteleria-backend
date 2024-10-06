@@ -9,7 +9,7 @@ from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from passlib.context import CryptContext
 
-from services.users_database import create_user, user_already_exists, get_user_by_username
+from services.users_database import create_user, user_already_exists, get_user_by_username, is_user_admin_or_owner, get_user_role_name
 from config.roles import role_configurations
 
 from models.user_in_db import UserInDB
@@ -43,9 +43,10 @@ async def get_user(username: str):
 async def create_account(username: str, password: str, user_data: dict):
     if await user_already_exists(username):
         raise USERNAME_ALREADY_REGISTERED_EXCEPTION
+    
     hashed_password = get_password_hash(password)
     try:
-        return await create_user(username, hashed_password, user_data["email"], user_data["role"], user_data["first_name"], user_data["last_name"], user_data["disabled"])
+        return await create_user(user_data["id_pasteleria"], username, hashed_password, user_data["deshabilitado"], user_data["email"], user_data["nombre"], user_data["apellido"])
     except Exception as e:
         raise INTERNAL_SERVER_ERROR_EXCEPTION(e)
 
@@ -53,7 +54,7 @@ async def authenticate_user(username: str, password: str):
     user = await get_user(username)
     if not user:
         return False
-    if not verify_password(password, user.hashed_password):
+    if not verify_password(password, user.clave_env):
         return False
     return user
 
@@ -81,7 +82,7 @@ async def get_current_user(token: Annotated[str, Depends(oauth2_scheme)]):
 async def get_current_active_user(
     current_user: Annotated[User, Depends(get_current_user)],
 ):
-    if current_user.disabled:
+    if current_user.deshabilitado:
         raise INACTIVE_USER_EXCEPTION
 
     return current_user
@@ -89,7 +90,8 @@ async def get_current_active_user(
 async def get_current_active_admin_user(
     current_active_user: Annotated[User, Depends(get_current_active_user)],
 ):
-    if current_active_user.role != "admin":
+    is_user_allowed = await is_user_admin_or_owner(current_active_user.usuario)
+    if is_user_allowed is False:
         raise PERMISSION_DENIED_EXCEPTION
 
     return current_active_user
@@ -97,10 +99,13 @@ async def get_current_active_admin_user(
 async def get_current_active_user_configuration(
     current_active_user: Annotated[User, Depends(get_current_active_user)],
 ):
-    if current_active_user.role not in role_configurations:
+    if get_user_role_name(current_active_user.id_rol) not in role_configurations:
         raise INVALID_ROLE_EXCEPTION
 
-    return role_configurations[current_active_user.role]
+    return {
+        "user_config": role_configurations[get_user_role_name(current_active_user.id_rol)],
+        "user_data": current_active_user
+    }
 
 def get_public_user_configuration() -> dict:
-    return role_configurations["client"]
+    return role_configurations["cliente"]

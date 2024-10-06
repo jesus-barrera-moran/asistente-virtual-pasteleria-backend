@@ -1,3 +1,4 @@
+from uuid import UUID
 from typing import Annotated
 from fastapi import Depends, APIRouter, Request, Response
 from langserve import APIHandler
@@ -12,20 +13,24 @@ async def invoke_with_auth(
     request: Request,
     current_user: Annotated[dict, Depends(get_current_active_user_configuration)],
 ) -> Response:
+    
+    user_config = current_user["user_config"]
+    user_data = current_user["user_data"]
 
     dynamic_api_handler = APIHandler(
         Agent(
-            current_user["llm"],
-            current_user["tools"](),
-            current_user["prompt"]
+            user_config["llm"],
+            user_config["tools"](user_data.id_pasteleria),
+            user_config["prompt"]
         ).get_agent(),
         path="/asistente",
     )
 
     return await dynamic_api_handler.invoke(request)
 
-@router.post("/atencion_cliente/invoke")
+@router.post("/atencion_cliente/invoke/{id_pasteleria}")
 async def invoke_without_auth(
+    id_pasteleria: UUID,
     request: Request,
     user_config: Annotated[dict, Depends(get_public_user_configuration)],
 ) -> Response:
@@ -33,7 +38,7 @@ async def invoke_without_auth(
     dynamic_api_handler = APIHandler(
         Agent(
             user_config["llm"],
-            user_config["tools"](),
+            user_config["tools"](id_pasteleria),
             user_config["prompt"]
         ).get_agent(),
         path="/atencion_cliente",
