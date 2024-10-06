@@ -19,7 +19,12 @@ def tool(id_pasteleria: UUID):
         general_configuration["file_name"]["manual"]
     )
 
-    file_content = file_data["content"].decode('utf-8')
+    file_content = "No existen procesos disponibles en el manual."
+
+    # Verificar si el contenido del archivo está vacío
+    if file_data["content"]:
+        file_content = file_data["content"].decode('utf-8')
+
     file_path = os.path.join(folder_name, file_data["name"])
 
     with open(file_path, "w") as file:
@@ -38,7 +43,7 @@ def tool(id_pasteleria: UUID):
     tool = create_retriever_tool(
         retriever,
         "manual_doc",
-        "Useful when you need to anser questions about to do pastry's processes.",
+        "Useful when you need to answer questions about to do pastry's processes.",
     )
 
     return tool
