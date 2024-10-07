@@ -246,3 +246,45 @@ async def update_database_password(id: int, new_password: str):
         raise exception
     finally:
         session.close()
+
+async def obtener_documentos_por_pasteleria(id_pasteleria: UUID):
+    engine = connect_with_connector(db_name)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    try:
+        # Consulta para obtener los documentos asociados a la pastelería
+        result_documentos = session.execute(
+            text(
+                "SELECT id, nombre, bucket "
+                "FROM documento "
+                "WHERE id_pasteleria = :id_pasteleria"
+            ),
+            {
+                "id_pasteleria": id_pasteleria
+            }
+        )
+
+        documentos = result_documentos.fetchall()
+
+        # Si no se encuentran documentos, devolver un mensaje informativo
+        if not documentos:
+            return []
+
+        # Estructurar la salida en una lista de diccionarios
+        lista_documentos = [
+            {
+                "id": documento.id,
+                "nombre": documento.nombre,
+                "bucket": documento.bucket,
+            }
+            for documento in documentos
+        ]
+
+        return lista_documentos
+
+    except Exception as exception:
+        session.rollback()
+        raise exception
+    finally:
+        session.close()

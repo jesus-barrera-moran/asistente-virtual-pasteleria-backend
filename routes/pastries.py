@@ -3,7 +3,9 @@ import secrets
 import string
 from typing import Annotated, List, Optional
 from fastapi import Depends, APIRouter, Body
-from services.pastries_database import create_pasteleria_with_admin, obtener_usuarios_por_pasteleria, obtener_bases_datos_por_pasteleria, update_database_connection, update_database_password
+from models.user import User
+from services.pastries_database import create_pasteleria_with_admin, obtener_usuarios_por_pasteleria, obtener_bases_datos_por_pasteleria, update_database_connection, update_database_password, obtener_documentos_por_pasteleria
+from services.files_storage import get_all_files_from_pasteleria
 from services.authentication import get_password_hash, get_current_active_admin_user
 from utils.exceptions import INTERNAL_SERVER_ERROR_EXCEPTION, PERMISSION_DENIED_EXCEPTION
 
@@ -147,6 +149,46 @@ async def actualizar_clave_conexion(
         )
 
         return result
+
+    except Exception as e:
+        raise INTERNAL_SERVER_ERROR_EXCEPTION(e)
+
+@router.get("/pastelerias/{id_pasteleria}/files")
+async def get_all_files(
+    current_user: Annotated[User, Depends(get_current_active_admin_user)]
+):
+    try:
+        # Verificar si el usuario tiene acceso a la pastelería actual
+        folder_name = str(current_user.id_pasteleria)
+
+        # Llamar a la función para obtener todos los archivos
+        files = get_all_files_from_pasteleria(folder_name)
+
+        if not files:
+            return []
+
+        return files
+
+    except Exception as e:
+        raise INTERNAL_SERVER_ERROR_EXCEPTION(e)
+
+@router.get("/pastelerias/{id_pasteleria}/documentos")
+async def get_all_documents(
+    id_pasteleria: str,
+    current_user: Annotated[User, Depends(get_current_active_admin_user)]
+):
+    try:
+        # Verificar si el usuario tiene acceso a la pastelería actual
+        if str(current_user.id_pasteleria) != id_pasteleria:
+            raise PERMISSION_DENIED_EXCEPTION
+
+        # Llamar a la función para obtener todos los documentos de la pastelería
+        documentos = await obtener_documentos_por_pasteleria(uuid.UUID(id_pasteleria))
+
+        if not documentos:
+            return {"message": "No se encontraron documentos para esta pastelería."}
+
+        return documentos
 
     except Exception as e:
         raise INTERNAL_SERVER_ERROR_EXCEPTION(e)
