@@ -4,12 +4,12 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from models.user import User
 from models.lite_user import LiteUser
-from services.authentication import create_account, get_current_active_admin_user, get_current_active_user, get_password_hash
-from services.users_database import get_all_users, update_user_status, update_user_role, update_user, get_user_role_name, get_user_by_username, update_users_batch
+from services.authentication import create_account, get_current_active_admin_user, get_current_active_user, get_password_hash, verify_password
+from services.users_database import get_all_users, update_user_status, update_user_role, update_user, get_user_role_name, get_user_by_username, update_user_password
 
 from config.roles import role_configurations
 
-from utils.exceptions import CREDENTIALS_REQUIRED_EXCEPTION, NOT_FOUND_USER_EXCEPTION, PERMISSION_DENIED_EXCEPTION, INVALID_ROLE_EXCEPTION, INTERNAL_SERVER_ERROR_EXCEPTION
+from utils.exceptions import CREDENTIALS_REQUIRED_EXCEPTION, NOT_FOUND_USER_EXCEPTION, PERMISSION_DENIED_EXCEPTION, INVALID_ROLE_EXCEPTION, INCORRECT_CREDENTIALS_EXCEPTION, INTERNAL_SERVER_ERROR_EXCEPTION
 
 router = APIRouter()
 
@@ -122,9 +122,7 @@ async def update_user_status_and_role_endpoint(
 ):
     if current_user.usuario == username:
         raise PERMISSION_DENIED_EXCEPTION
-    print("1")
     user_to_update = await get_user_by_username(username)
-    print("2")
     if not user_to_update:
         raise NOT_FOUND_USER_EXCEPTION
 
@@ -139,7 +137,6 @@ async def update_user_status_and_role_endpoint(
         raise PERMISSION_DENIED_EXCEPTION
 
     # Si se envió un rol para actualizar
-    print(role)
     if role:
         if get_user_role_name(role) not in role_configurations:
             raise INVALID_ROLE_EXCEPTION
@@ -153,7 +150,6 @@ async def update_user_status_and_role_endpoint(
             raise INTERNAL_SERVER_ERROR_EXCEPTION(e)
 
     # Si se envió un estado de deshabilitado/habilitado para actualizar
-    print(disabled)
     if disabled is not None:
         try:
             await update_user_status(username, disabled)
@@ -170,7 +166,6 @@ async def update_user_status_and_role_endpoint(
 #     # Validar que el usuario actual no sea uno de los que se intenta actualizar
 #     for user in users:
 #         if current_user.usuario == user.username:
-#             print("current_user")
 #             raise PERMISSION_DENIED_EXCEPTION
     
 #     # Lista para recolectar usuarios que no existen
@@ -188,12 +183,10 @@ async def update_user_status_and_role_endpoint(
 
 #         # Comprobar si el usuario que se está actualizando es propietario
 #         if user_to_update_current_role == "propietario":
-#             print("propietario")
 #             raise PERMISSION_DENIED_EXCEPTION
 
 #         # Si el usuario actual es administrador, pero no propietario, no puede cambiar roles de otros administradores
 #         if user_to_update_current_role == "admin" and get_user_role_name(current_user.id_rol) != "propietario":
-#             print("admin")
 #             raise PERMISSION_DENIED_EXCEPTION
 
 #         # Validar el rol enviado en la petición
@@ -202,7 +195,6 @@ async def update_user_status_and_role_endpoint(
 #                 raise INVALID_ROLE_EXCEPTION
 
 #             if get_user_role_name(user.id_role) == "propietario":
-#                 print("propietario2")
 #                 raise PERMISSION_DENIED_EXCEPTION
 
 #     # Si no se encontraron algunos usuarios, lanzar una excepción
@@ -230,24 +222,39 @@ async def get_user_endpoint(
 @router.put("/users/me")
 async def update_user_endpoint(
     current_active_user: Annotated[User, Depends(get_current_active_user)],
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
-    email: Optional[str] = Form(None),
-    first_name: Optional[str] = Form(None),
-    last_name: Optional[str] = Form(None),
+    username: str = Body(...),
+    email: str = Body(...),
+    first_name: str = Body(...),
+    last_name: str = Body(...),
 ):
-    if form_data.username != current_active_user.usuario:
+    if username != current_active_user.usuario:
         raise PERMISSION_DENIED_EXCEPTION
-
-    if not form_data.username or not form_data.password:
-        raise CREDENTIALS_REQUIRED_EXCEPTION
 
     try:
         return await update_user(
             username=current_active_user.usuario,
-            new_hashed_password=get_password_hash(form_data.password),
             email=email,
             first_name=first_name,
             last_name=last_name,
+        )
+    except Exception as e:
+        raise INTERNAL_SERVER_ERROR_EXCEPTION(e)
+
+@router.put("/users/me/password")
+async def update_user_password_endpoint(
+    current_active_user: Annotated[User, Depends(get_current_active_user)],
+    current_password: str = Body(...),
+    new_password: str = Body(...),
+):
+    user = await get_user_by_username(current_active_user.usuario)
+
+    if not verify_password(current_password, user['clave_env']):
+        raise INCORRECT_CREDENTIALS_EXCEPTION
+
+    try:
+        return await update_user_password(
+            username=current_active_user.usuario,
+            new_password_hash=get_password_hash(new_password),
         )
     except Exception as e:
         raise INTERNAL_SERVER_ERROR_EXCEPTION(e)

@@ -120,21 +120,18 @@ async def update_users_batch(users: list[dict]):
             text("SELECT id FROM rol WHERE id IN :roles"),
             {"roles": tuple(roles)}
         )
-        print('1')
         found_roles = [row[0] for row in result_roles.fetchall()]
 
         # Verificar si hay roles inexistentes
         missing_roles = set(roles) - set(found_roles)
         if missing_roles:
             raise Exception(f"Roles no encontrados: {', '.join(missing_roles)}")
-        print('2')
         # Preparar el SQL batch para actualizar todos los usuarios
         update_queries = []
         for user in users:
             update_queries.append(
                 f"UPDATE usuario SET deshabilitado = :disabled_{user['username']}, id_rol = :id_role_{user['username']} WHERE usuario = :username_{user['username']}"
             )
-        print('3')
         # Crear la consulta combinada
         combined_update_query = "; ".join(update_queries)
         
@@ -146,13 +143,11 @@ async def update_users_batch(users: list[dict]):
                 f"disabled_{user['username']}": user["disabled"],
                 f"id_role_{user['username']}": user["id_role"],
             })
-        print('4')
         # Ejecutar la consulta de actualización en batch
         result = session.execute(
             text(combined_update_query),
             parameters
         )
-        print('5')
         session.commit()
 
         return [{"username": user["username"], "disabled": user["disabled"], "id_role": user["id_role"]} for user in users]
@@ -163,7 +158,7 @@ async def update_users_batch(users: list[dict]):
     finally:
         session.close()
 
-async def update_user(username: str, new_hashed_password: str, email: Optional[str] = None, first_name: Optional[str] = None, last_name: Optional[str] = None):
+async def update_user(username: str, email: str, first_name: str, last_name: str):
     engine = connect_with_connector(db_name)
     Session = sessionmaker(bind=engine)
     session = Session()
@@ -171,7 +166,6 @@ async def update_user(username: str, new_hashed_password: str, email: Optional[s
     try:
         update_data = {
             "username": username,
-            "new_hashed_password": new_hashed_password,
             "email": email,
             "first_name": first_name,
             "last_name": last_name,
@@ -179,7 +173,7 @@ async def update_user(username: str, new_hashed_password: str, email: Optional[s
 
         result = session.execute(
             text(
-                "UPDATE usuario SET clave_env = :new_hashed_password, email = :email, nombre = :first_name, apellido = :last_name WHERE usuario = :username"
+                "UPDATE usuario SET email = :email, nombre = :first_name, apellido = :last_name WHERE usuario = :username"
             ),
             update_data
         )
@@ -208,6 +202,31 @@ async def user_already_exists(username: str):
 
         return result.fetchone() is not None
     except Exception as exception:
+        raise exception
+    finally:
+        session.close()
+
+async def update_user_password(username: str, new_password_hash: str):
+    engine = connect_with_connector(db_name)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    try:
+        # Actualizar la contraseña en la base de datos
+        result = session.execute(
+            text("UPDATE usuario SET clave_env = :new_password WHERE usuario = :username"),
+            {"new_password": new_password_hash, "username": username}
+        )
+
+        session.commit()
+
+        # Verificar si se actualizó correctamente
+        if result.rowcount == 0:
+            raise NOT_FOUND_USER_EXCEPTION
+
+        return {"message": "Contraseña actualizada exitosamente"}
+    except Exception as exception:
+        session.rollback()  # Asegurarse de hacer rollback en caso de error
         raise exception
     finally:
         session.close()
