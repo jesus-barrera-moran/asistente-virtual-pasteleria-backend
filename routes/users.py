@@ -16,20 +16,27 @@ router = APIRouter()
 @router.post("/users")
 async def create_user_endpoint(
     current_user: Annotated[User, Depends(get_current_active_admin_user)],
-    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+    first_name: str = Body(...),
+    last_name: str = Body(...),
+    email: str = Body(...),
+    username: str = Body(...),
+    password: str = Body(...),
 ):
-    if not form_data.username or not form_data.password:
+    if not username or not password:
         raise CREDENTIALS_REQUIRED_EXCEPTION
 
     user = User(
         id_pasteleria=current_user.id_pasteleria,
-        username=form_data.username,
-        deshabilitado=False
+        username=username,
+        deshabilitado=False,
+        nombre=first_name,
+        apellido=last_name,
+        email=email,
     )
 
     try:
         user_data = user.dict()
-        return await create_account(form_data.username, form_data.password, user_data)
+        return await create_account(username, password, user_data)
     except Exception as e:
         raise INTERNAL_SERVER_ERROR_EXCEPTION(e)
 
