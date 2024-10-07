@@ -85,3 +85,49 @@ async def create_pasteleria_with_admin(
         raise exception
     finally:
         session.close()
+
+# Función para obtener todos los usuarios correspondientes a una pastelería
+async def obtener_usuarios_por_pasteleria(id_pasteleria: UUID):
+    engine = connect_with_connector(db_name)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    try:
+        # Consulta para obtener todos los usuarios asociados a la pastelería por su id_pasteleria
+        result_usuarios = session.execute(
+            text(
+                "SELECT u.id, u.usuario, u.email, r.id as rol, u.deshabilitado "
+                "FROM usuario u "
+                "JOIN rol r ON u.id_rol = r.id "
+                "WHERE u.id_pasteleria = :id_pasteleria"
+            ),
+            {
+                "id_pasteleria": id_pasteleria
+            }
+        )
+
+        usuarios = result_usuarios.fetchall()
+
+        # Si no se encuentran usuarios, devolver un mensaje informativo
+        if not usuarios:
+            return {"message": "No se encontraron usuarios para esta pastelería."}
+
+        # Estructurar la salida en una lista de diccionarios
+        lista_usuarios = [
+            {
+                "id_usuario": usuario.id,
+                "nombre_usuario": usuario.usuario,
+                "email": usuario.email,
+                "rol": usuario.rol,
+                "deshabilitado": usuario.deshabilitado
+            }
+            for usuario in usuarios
+        ]
+
+        return lista_usuarios
+
+    except Exception as exception:
+        session.rollback()
+        raise exception
+    finally:
+        session.close()
