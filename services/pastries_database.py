@@ -131,3 +131,118 @@ async def obtener_usuarios_por_pasteleria(id_pasteleria: UUID):
         raise exception
     finally:
         session.close()
+
+async def obtener_bases_datos_por_pasteleria(id_pasteleria: UUID):
+    engine = connect_with_connector(db_name)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    try:
+        # Consulta para obtener los datos de las bases de datos asociadas a la pastelería
+        result_bases_datos = session.execute(
+            text(
+                "SELECT id, nombre, servidor, puerto, usuario "
+                "FROM base_de_datos "
+                "WHERE id_pasteleria = :id_pasteleria"
+            ),
+            {
+                "id_pasteleria": id_pasteleria
+            }
+        )
+
+        bases_datos = result_bases_datos.fetchall()
+
+        # Si no se encuentran bases de datos, devolver un mensaje informativo
+        if not bases_datos:
+            return {"message": "No se encontraron bases de datos para esta pastelería."}
+
+        # Estructurar la salida en una lista de diccionarios
+        lista_bases_datos = [
+            {
+                "id": base_dato.id,
+                "nombre": base_dato.nombre,
+                "servidor": base_dato.servidor,
+                "puerto": base_dato.puerto,
+                "usuario": base_dato.usuario,
+            }
+            for base_dato in bases_datos
+        ]
+
+        return lista_bases_datos
+
+    except Exception as exception:
+        session.rollback()
+        raise exception
+    finally:
+        session.close()
+
+async def update_database_connection(
+    id: int, nombre: str, servidor: str, puerto: int, usuario: str
+):
+    engine = connect_with_connector(db_name)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    try:
+        # Actualizar los datos de la conexión en la base de datos
+        result = session.execute(
+            text(
+                """
+                UPDATE base_de_datos
+                SET nombre = :nombre, servidor = :servidor, puerto = :puerto, usuario = :usuario
+                WHERE id = :id
+                """
+            ),
+            {
+                "nombre": nombre,
+                "servidor": servidor,
+                "puerto": puerto,
+                "usuario": usuario,
+                "id": id,
+            }
+        )
+
+        session.commit()
+
+        if result.rowcount == 0:
+            raise Exception("No se encontró el registro con el ID especificado")
+
+        return {"message": "Conexión actualizada exitosamente"}
+    except Exception as exception:
+        session.rollback()  # Asegurarse de hacer rollback en caso de error
+        raise exception
+    finally:
+        session.close()
+
+async def update_database_password(id: int, new_password: str):
+    engine = connect_with_connector(db_name)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    try:
+        # Actualizar la clave en la base de datos
+        result = session.execute(
+            text(
+                """
+                UPDATE base_de_datos
+                SET clave = :new_password
+                WHERE id = :id
+                """
+            ),
+            {
+                "new_password": new_password,
+                "id": id,
+            }
+        )
+
+        session.commit()
+
+        if result.rowcount == 0:
+            raise Exception("No se encontró el registro con el ID especificado")
+
+        return {"message": "Clave actualizada exitosamente"}
+    except Exception as exception:
+        session.rollback()  # Asegurarse de hacer rollback en caso de error
+        raise exception
+    finally:
+        session.close()
