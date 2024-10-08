@@ -86,6 +86,51 @@ async def create_pasteleria_with_admin(
     finally:
         session.close()
 
+async def obtener_pasteleria_por_id(id_pasteleria: UUID):
+    engine = connect_with_connector(db_name)
+    Session = sessionmaker(bind=engine)
+    session = Session()
+
+    try:
+        # Consulta para obtener los datos de la pastelería por su id_pasteleria
+        result_pasteleria = session.execute(
+            text(
+                # "SELECT id, nombre, email, telefono, direccion, ciudad, codigo_postal, url_website, fecha_registro "
+                "SELECT id, email, url_website "
+                "FROM pasteleria "
+                "WHERE id = :id_pasteleria"
+            ),
+            {
+                "id_pasteleria": id_pasteleria
+            }
+        )
+
+        pasteleria = result_pasteleria.fetchone()
+
+        # Si no se encuentra la pastelería, devolver un mensaje informativo
+        if not pasteleria:
+            return {"message": "No se encontró la pastelería."}
+
+        pasteleria_dict = {
+            "id": pasteleria.id,
+            # "nombre": pasteleria.nombre,
+            "email": pasteleria.email,
+            # "telefono": pasteleria.telefono,
+            # "direccion": pasteleria.direccion,
+            # "ciudad": pasteleria.ciudad,
+            # "codigo_postal": pasteleria.codigo_postal,
+            "url_website": pasteleria.url_website,
+            # "fecha_registro": pasteleria.fecha_registro
+        }
+
+        return pasteleria_dict
+
+    except Exception as exception:
+        session.rollback()
+        raise exception
+    finally:
+        session.close()
+
 # Función para obtener todos los usuarios correspondientes a una pastelería
 async def obtener_usuarios_por_pasteleria(id_pasteleria: UUID):
     engine = connect_with_connector(db_name)

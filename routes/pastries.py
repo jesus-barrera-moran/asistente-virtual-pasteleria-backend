@@ -4,7 +4,7 @@ import string
 from typing import Annotated, List, Optional
 from fastapi import Depends, APIRouter, Body
 from models.user import User
-from services.pastries_database import create_pasteleria_with_admin, obtener_usuarios_por_pasteleria, obtener_bases_datos_por_pasteleria, update_database_connection, update_database_password, obtener_documentos_por_pasteleria
+from services.pastries_database import create_pasteleria_with_admin, obtener_usuarios_por_pasteleria, obtener_bases_datos_por_pasteleria, update_database_connection, update_database_password, obtener_documentos_por_pasteleria, obtener_pasteleria_por_id
 from services.files_storage import get_all_files_from_pasteleria
 from services.authentication import get_password_hash, get_current_active_admin_user
 from utils.exceptions import INTERNAL_SERVER_ERROR_EXCEPTION, PERMISSION_DENIED_EXCEPTION
@@ -54,6 +54,22 @@ async def create_pasteleria_endpoint(
             "usuario": result["usuario"],
             "clave": raw_password
         }
+    except Exception as e:
+        raise INTERNAL_SERVER_ERROR_EXCEPTION(e)
+
+@router.get("/pastelerias/{id_pasteleria}")
+async def obtener_datos_pasteleria_endpoint(
+    id_pasteleria: str,
+):
+    try:
+        # Obtener los datos de la pastelería
+        pasteleria = await obtener_pasteleria_por_id(id_pasteleria)
+
+        if "message" in pasteleria:
+            raise INTERNAL_SERVER_ERROR_EXCEPTION(pasteleria["message"])
+
+        return pasteleria
+
     except Exception as e:
         raise INTERNAL_SERVER_ERROR_EXCEPTION(e)
 
