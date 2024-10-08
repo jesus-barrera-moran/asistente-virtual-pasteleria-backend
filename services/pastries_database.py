@@ -96,7 +96,7 @@ async def obtener_pasteleria_por_id(id_pasteleria: UUID):
         result_pasteleria = session.execute(
             text(
                 # "SELECT id, nombre, email, telefono, direccion, ciudad, codigo_postal, url_website, fecha_registro "
-                "SELECT id, email, url_website "
+                "SELECT id, nombre, email, url_website "
                 "FROM pasteleria "
                 "WHERE id = :id_pasteleria"
             ),
@@ -113,7 +113,7 @@ async def obtener_pasteleria_por_id(id_pasteleria: UUID):
 
         pasteleria_dict = {
             "id": pasteleria.id,
-            # "nombre": pasteleria.nombre,
+            "nombre": pasteleria.nombre,
             "email": pasteleria.email,
             # "telefono": pasteleria.telefono,
             # "direccion": pasteleria.direccion,
