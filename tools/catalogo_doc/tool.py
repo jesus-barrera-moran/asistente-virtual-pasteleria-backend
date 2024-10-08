@@ -16,7 +16,7 @@ def tool(id_pasteleria: UUID):
     os.makedirs(folder_name, exist_ok=True)
     file_data = read_file(
         id_pasteleria_str,
-        general_configuration["file_name"]["catalog"]
+        general_configuration["file_name"]["catalogo"]
     )
 
     file_content = "No existen productos en el catálogo."
@@ -27,7 +27,7 @@ def tool(id_pasteleria: UUID):
 
     file_path = os.path.join(folder_name, file_data["name"])
 
-    with open(file_path, "w") as file:
+    with open(file_path, "w", encoding="utf-8") as file:
         file.write(file_content)
 
     loader = TextLoader(file_path)

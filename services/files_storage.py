@@ -1,3 +1,4 @@
+import os  # Importar para usar os.path.splitext
 from google.cloud import storage
 
 client = storage.Client()
@@ -42,8 +43,15 @@ def get_all_files_from_pasteleria(folder_name):
         file_name = blob.name.split(f"{folder_name}/")[-1]  # Extraer el nombre del archivo sin la ruta completa
 
         if file_name:  # Evitar entradas vacías que podrían surgir de la carpeta
+            # Eliminar la extensión del archivo
+            file_name_without_extension = os.path.splitext(file_name)[0]
+
             # Leer el contenido del archivo usando la función read_file
             file_data = read_file(folder_name, file_name)
+            
+            # Reemplazar el nombre con el nombre sin la extensión
+            file_data["name"] = file_name_without_extension
+
             files.append(file_data)
 
     return files

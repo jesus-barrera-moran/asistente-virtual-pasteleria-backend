@@ -27,7 +27,7 @@ def tool(id_pasteleria: UUID):
 
     file_path = os.path.join(folder_name, file_data["name"])
 
-    with open(file_path, "w") as file:
+    with open(file_path, "w", encoding="utf-8") as file:
         file.write(file_content)
 
     loader = TextLoader(file_path)
