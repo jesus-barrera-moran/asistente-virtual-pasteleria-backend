@@ -13,7 +13,7 @@ db_name = os.environ["BUSINESS_DATABASE_NAME"]
 # Pasteleria and User Creation Service
 
 async def create_pasteleria_with_admin(
-    id_pasteleria: UUID,
+    id_pasteleria: str,
     nombre: str, 
     email: str, 
     hashed_password: str,
@@ -73,6 +73,30 @@ async def create_pasteleria_with_admin(
                 "id_role": id_role,
                 "username": usuario,
                 "hashed_password": hashed_password,
+            }
+        )
+
+        # 5. Crear las bases de datos de la pastelería
+        session.execute(
+            text(
+                "INSERT INTO base_de_datos (id_pasteleria, categoria) "
+                "VALUES (:id_pasteleria, 'inventario'), "
+                "(:id_pasteleria, 'transacciones')"
+            ),
+            {
+                "id_pasteleria": id_pasteleria
+            }
+        )
+
+        # 6. Crear los documentos de la pastelería
+        session.execute(
+            text(
+                "INSERT INTO documento (id_pasteleria, nombre, bucket) "
+                "VALUES (:id_pasteleria, 'catalogo', 'catalogos'), "
+                "(:id_pasteleria, 'manual', 'manuales')"
+            ),
+            {
+                "id_pasteleria": id_pasteleria
             }
         )
 

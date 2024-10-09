@@ -2,10 +2,10 @@ import uuid
 import secrets
 import string
 from typing import Annotated, List, Optional
-from fastapi import Depends, APIRouter, Body
+from fastapi import Depends, APIRouter, Body, Form, UploadFile, File
 from models.user import User
 from services.pastries_database import create_pasteleria_with_admin, obtener_usuarios_por_pasteleria, obtener_bases_datos_por_pasteleria, update_database_connection, update_database_password, obtener_documentos_por_pasteleria, obtener_pasteleria_por_id, probar_conexion_base_datos
-from services.files_storage import get_all_files_from_pasteleria
+from services.files_storage import get_all_files_from_pasteleria, write_file
 from services.authentication import get_password_hash, get_current_active_admin_user
 from utils.exceptions import INTERNAL_SERVER_ERROR_EXCEPTION, PERMISSION_DENIED_EXCEPTION
 
@@ -19,16 +19,18 @@ def generate_secure_password(length: int = 12) -> str:
 
 @router.post("/pastelerias")
 async def create_pasteleria_endpoint(
-    nombre: Annotated[str, Body()],
-    email: Annotated[str, Body()],
-    telefono: Annotated[Optional[str], Body()] = None,
-    direccion: Annotated[Optional[str], Body()] = None,
-    ciudad: Annotated[Optional[str], Body()] = None,
-    codigo_postal: Annotated[Optional[int], Body()] = None,
-    url_website: Annotated[Optional[str], Body()] = None,
+    nombre: str = Form(...),
+    email: str = Form(...),
+    telefono: Optional[str] = Form(None),
+    direccion: Optional[str] = Form(None),
+    ciudad: Optional[str] = Form(None),
+    codigo_postal: Optional[int] = Form(None),
+    url_website: Optional[str] = Form(None),
+    logo_menu: Optional[UploadFile] = File(None),  # Campo para el archivo del logo del menú
+    logo_fondo: Optional[UploadFile] = File(None),  # Campo para el archivo del logo de fondo
 ):
-    
-    id_pasteleria = uuid.uuid4()
+    # Generar un ID único para la pastelería
+    id_pasteleria = str(uuid.uuid4())
 
     # Generar una contraseña segura
     raw_password = generate_secure_password()
@@ -37,7 +39,19 @@ async def create_pasteleria_endpoint(
     hashed_password = get_password_hash(raw_password)
 
     try:
-        # Crear la pastelería y el usuario administrador
+        # Si se subió el logo del menú, guardarlo en el bucket de GCP
+        if logo_menu:
+            menu_logo_name = f"logo_menu_{logo_menu.filename}"
+            menu_logo_content = await logo_menu.read()  # Leer el contenido del archivo
+            write_file(id_pasteleria, menu_logo_name, menu_logo_content, True)  # Subir el archivo al bucket
+
+        # Si se subió el logo de fondo, guardarlo en el bucket de GCP
+        if logo_fondo:
+            fondo_logo_name = f"logo_fondo_{logo_fondo.filename}"
+            fondo_logo_content = await logo_fondo.read()  # Leer el contenido del archivo
+            write_file(id_pasteleria, fondo_logo_name, fondo_logo_content, True)  # Subir el archivo al bucket
+
+        # Crear la pastelería y el usuario administrador en la base de datos
         result = await create_pasteleria_with_admin(
             id_pasteleria=id_pasteleria,
             nombre=nombre,

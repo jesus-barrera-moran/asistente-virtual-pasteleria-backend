@@ -3,10 +3,11 @@ from google.cloud import storage
 
 client = storage.Client()
 
-bucket_name = "asistentes-virtuales-pastelerias-documentos-bucket"
+documents_bucket_name = "asistentes-virtuales-pastelerias-documentos-bucket"
+images_bucket_name = "asistentes-virtuales-pastelerias-imagenes-bucket"
 
 def read_file(folder_name, source_blob_name):
-    bucket = client.get_bucket(bucket_name)
+    bucket = client.get_bucket(documents_bucket_name)
     # Concatenar el nombre de la carpeta y el archivo para crear una jerarquía de carpetas
     blob_name = f"{folder_name}/{source_blob_name}"
     blob = bucket.blob(blob_name)
@@ -19,8 +20,9 @@ def read_file(folder_name, source_blob_name):
     content = blob.download_as_string()
     return {"name": source_blob_name, "content": content}
 
-def write_file(folder_name, destination_blob_name, content):
+def write_file(folder_name, destination_blob_name, content, isImage=False):
     """Writes a file to the GCP bucket within a 'folder'."""
+    bucket_name = images_bucket_name if isImage else documents_bucket_name
     bucket = client.get_bucket(bucket_name)
     # Concatenar el nombre de la carpeta y el archivo para simular una estructura de carpetas
     blob_name = f"{folder_name}/{destination_blob_name}"
@@ -33,7 +35,7 @@ def get_all_files_from_pasteleria(folder_name):
     """
     Obtiene todos los archivos de una pastelería (carpeta) y devuelve su contenido y nombre.
     """
-    bucket = client.get_bucket(bucket_name)
+    bucket = client.get_bucket(documents_bucket_name)
     blobs = bucket.list_blobs(prefix=f"{folder_name}/")  # Obtener todos los blobs en la carpeta de la pastelería
 
     files = []
