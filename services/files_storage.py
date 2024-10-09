@@ -57,3 +57,33 @@ def get_all_files_from_pasteleria(folder_name):
             files.append(file_data)
 
     return files
+
+def get_public_image_urls_from_pasteleria(folder_name: str):
+    """
+    Obtiene todas las URLs públicas de las imágenes almacenadas para una pastelería en la bucket de imágenes.
+    Devuelve una lista de diccionarios con el nombre del archivo (sin extensión) y su URL pública.
+    """
+    bucket = client.get_bucket(images_bucket_name)
+    blobs = bucket.list_blobs(prefix=f"{folder_name}/")  # Obtener todos los blobs en la carpeta de la pastelería
+
+    image_urls = []
+
+    for blob in blobs:
+        # Verificar si el archivo tiene un nombre válido
+        if blob.name:
+            # Construir la URL pública manualmente
+            public_url = f"https://storage.googleapis.com/{bucket.name}/{blob.name}"
+            
+            # Extraer el nombre del archivo sin la carpeta
+            file_name_with_extension = blob.name.split("/")[-1]
+            
+            # Quitar la extensión del nombre del archivo
+            file_name = os.path.splitext(file_name_with_extension)[0]
+            
+            # Agregar el nombre del archivo (sin extensión) y la URL a la lista
+            image_urls.append({
+                "file_name": file_name,
+                "url": public_url
+            })
+
+    return image_urls

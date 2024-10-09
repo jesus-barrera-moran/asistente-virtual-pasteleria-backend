@@ -5,7 +5,7 @@ from typing import Annotated, List, Optional
 from fastapi import Depends, APIRouter, Body, Form, UploadFile, File
 from models.user import User
 from services.pastries_database import create_pasteleria_with_admin, obtener_usuarios_por_pasteleria, obtener_bases_datos_por_pasteleria, update_database_connection, update_database_password, obtener_documentos_por_pasteleria, obtener_pasteleria_por_id, probar_conexion_base_datos
-from services.files_storage import get_all_files_from_pasteleria, write_file
+from services.files_storage import get_all_files_from_pasteleria, write_file, get_public_image_urls_from_pasteleria
 from services.authentication import get_password_hash, get_current_active_admin_user
 from utils.exceptions import INTERNAL_SERVER_ERROR_EXCEPTION, PERMISSION_DENIED_EXCEPTION
 
@@ -41,13 +41,13 @@ async def create_pasteleria_endpoint(
     try:
         # Si se subió el logo del menú, guardarlo en el bucket de GCP
         if logo_menu:
-            menu_logo_name = f"logo_menu_{logo_menu.filename}"
+            menu_logo_name = "logo_menu"
             menu_logo_content = await logo_menu.read()  # Leer el contenido del archivo
             write_file(id_pasteleria, menu_logo_name, menu_logo_content, True)  # Subir el archivo al bucket
 
         # Si se subió el logo de fondo, guardarlo en el bucket de GCP
         if logo_fondo:
-            fondo_logo_name = f"logo_fondo_{logo_fondo.filename}"
+            fondo_logo_name = "logo_fondo"
             fondo_logo_content = await logo_fondo.read()  # Leer el contenido del archivo
             write_file(id_pasteleria, fondo_logo_name, fondo_logo_content, True)  # Subir el archivo al bucket
 
@@ -81,6 +81,10 @@ async def obtener_datos_pasteleria_endpoint(
 
         if "message" in pasteleria:
             raise INTERNAL_SERVER_ERROR_EXCEPTION(pasteleria["message"])
+
+        image_urls = get_public_image_urls_from_pasteleria(id_pasteleria)
+
+        pasteleria["logos"] = image_urls
 
         return pasteleria
 
