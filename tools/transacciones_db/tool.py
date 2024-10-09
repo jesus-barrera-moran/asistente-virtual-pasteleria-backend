@@ -15,15 +15,16 @@ from services.pastries_database import obtener_bases_datos_por_pasteleria
 
 async def transacciones_db(id_pasteleria: UUID):
     # Get the database name, user and password from environment variables
-    name = "transacciones"
+    categoria = "transacciones"
 
     bases_de_datos = await obtener_bases_datos_por_pasteleria(id_pasteleria)
 
-    bases_de_datos_inventario = [base_de_datos for base_de_datos in bases_de_datos if base_de_datos["nombre"] == name]
+    bases_de_datos_inventario = [base_de_datos for base_de_datos in bases_de_datos if base_de_datos["categoria"] == categoria]
 
     if not bases_de_datos_inventario:
-        raise Exception(f"Database {name} not found for bakery {id_pasteleria}")
+        raise Exception(f"Database {categoria} not found for bakery {id_pasteleria}")
     
+    name = bases_de_datos_inventario[0]["nombre"]
     user = bases_de_datos_inventario[0]["usuario"]
     password = bases_de_datos_inventario[0]["clave"]
     host = bases_de_datos_inventario[0]["servidor"]
