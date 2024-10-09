@@ -4,7 +4,7 @@ import string
 from typing import Annotated, List, Optional
 from fastapi import Depends, APIRouter, Body
 from models.user import User
-from services.pastries_database import create_pasteleria_with_admin, obtener_usuarios_por_pasteleria, obtener_bases_datos_por_pasteleria, update_database_connection, update_database_password, obtener_documentos_por_pasteleria, obtener_pasteleria_por_id
+from services.pastries_database import create_pasteleria_with_admin, obtener_usuarios_por_pasteleria, obtener_bases_datos_por_pasteleria, update_database_connection, update_database_password, obtener_documentos_por_pasteleria, obtener_pasteleria_por_id, probar_conexion_base_datos
 from services.files_storage import get_all_files_from_pasteleria
 from services.authentication import get_password_hash, get_current_active_admin_user
 from utils.exceptions import INTERNAL_SERVER_ERROR_EXCEPTION, PERMISSION_DENIED_EXCEPTION
@@ -205,6 +205,25 @@ async def get_all_documents(
             return {"message": "No se encontraron documentos para esta pastelería."}
 
         return documentos
+
+    except Exception as e:
+        raise INTERNAL_SERVER_ERROR_EXCEPTION(e)
+
+@router.get("/pastelerias/{id_pasteleria}/bases-datos/{id_base_datos}/probar-conexion")
+async def probar_conexion_base_datos_endpoint(
+    id_pasteleria: str,
+    id_base_datos: int,
+    current_user: Annotated[User, Depends(get_current_active_admin_user)]
+):
+    try:
+        # Verificar si el usuario tiene acceso a la pastelería actual
+        if str(current_user.id_pasteleria) != id_pasteleria:
+            raise PERMISSION_DENIED_EXCEPTION
+
+        # Probar la conexión a la base de datos
+        resultado = await probar_conexion_base_datos(uuid.UUID(id_pasteleria), id_base_datos)
+
+        return resultado
 
     except Exception as e:
         raise INTERNAL_SERVER_ERROR_EXCEPTION(e)

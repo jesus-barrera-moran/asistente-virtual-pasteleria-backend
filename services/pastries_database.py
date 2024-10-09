@@ -4,6 +4,9 @@ from sqlalchemy.sql import text
 from database.engine import connect_with_connector
 from typing import Optional
 from uuid import UUID
+from langchain_community.utilities import SQLDatabase
+
+from utils.exceptions import INTERNAL_SERVER_ERROR_EXCEPTION
 
 db_name = os.environ["BUSINESS_DATABASE_NAME"]
 
@@ -334,3 +337,39 @@ async def obtener_documentos_por_pasteleria(id_pasteleria: UUID):
         raise exception
     finally:
         session.close()
+
+async def probar_conexion_base_datos(id_pasteleria: UUID, id_base_datos: int):
+    # Obtener los detalles de las bases de datos asociadas a la pastelería
+    bases_de_datos = await obtener_bases_datos_por_pasteleria(id_pasteleria)
+
+    # Buscar la base de datos específica por ID
+    base_de_datos_seleccionada = next(
+        (base_de_datos for base_de_datos in bases_de_datos if base_de_datos["id"] == id_base_datos), None
+    )
+
+    if not base_de_datos_seleccionada:
+        return {"message": f"No se encontró la base de datos con ID {id_base_datos} para la pastelería {id_pasteleria}"}
+
+    # Extraer los detalles de conexión
+    nombre = base_de_datos_seleccionada["nombre"]
+    usuario = base_de_datos_seleccionada["usuario"]
+    clave = base_de_datos_seleccionada["clave"]
+    servidor = base_de_datos_seleccionada["servidor"]
+    puerto = base_de_datos_seleccionada["puerto"]
+
+    # Crear la cadena de conexión
+    conn_str = f"postgresql+pg8000://{usuario}:{clave}@{servidor}:{puerto}/{nombre}"
+
+    try:
+        # Crear una instancia de SQLDatabase usando la cadena de conexión
+        db = SQLDatabase.from_uri(conn_str)
+
+        # Ejecutar una consulta simple para probar la conexión
+        result = db.run("SELECT 1")
+
+        # Si la consulta se ejecuta correctamente, la conexión es válida
+        return {"message": "Conexión exitosa a la base de datos.", "result": result}
+
+    except Exception as e:
+        # Si ocurre un error, devolver un mensaje de error con la descripción
+        raise INTERNAL_SERVER_ERROR_EXCEPTION(f"Error al conectar con la base de datos: {str(e)}")
