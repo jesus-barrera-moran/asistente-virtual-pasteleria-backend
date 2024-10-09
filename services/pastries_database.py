@@ -186,7 +186,7 @@ async def obtener_bases_datos_por_pasteleria(id_pasteleria: UUID):
         # Consulta para obtener los datos de las bases de datos asociadas a la pastelería
         result_bases_datos = session.execute(
             text(
-                "SELECT id, nombre, servidor, puerto, usuario "
+                "SELECT id, nombre, clave, servidor, puerto, usuario "
                 "FROM base_de_datos "
                 "WHERE id_pasteleria = :id_pasteleria"
             ),
@@ -206,6 +206,7 @@ async def obtener_bases_datos_por_pasteleria(id_pasteleria: UUID):
             {
                 "id": base_dato.id,
                 "nombre": base_dato.nombre,
+                "clave": base_dato.clave,
                 "servidor": base_dato.servidor,
                 "puerto": base_dato.puerto,
                 "usuario": base_dato.usuario,

@@ -10,7 +10,7 @@ from langchain_text_splitters import CharacterTextSplitter
 from services.files_storage import read_file
 from config.general import general_configuration
 
-def tool(id_pasteleria: UUID):
+async def tool(id_pasteleria: UUID):
     id_pasteleria_str = str(id_pasteleria)
     folder_name = f"documents/{id_pasteleria_str}"
     os.makedirs(folder_name, exist_ok=True)

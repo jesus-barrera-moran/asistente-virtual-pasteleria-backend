@@ -17,10 +17,12 @@ async def invoke_with_auth(
     user_config = current_user["user_config"]
     user_data = current_user["user_data"]
 
+    tools = await user_config["tools"](user_data.id_pasteleria)
+
     dynamic_api_handler = APIHandler(
         Agent(
             user_config["llm"],
-            user_config["tools"](user_data.id_pasteleria),
+            tools,
             user_config["prompt"]
         ).get_agent(),
         path="/asistente",
