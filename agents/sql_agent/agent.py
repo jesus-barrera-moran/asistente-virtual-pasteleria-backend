@@ -13,7 +13,7 @@ class SQLAgent:
             db=db,
             agent_type="openai-tools",
             verbose=True,
-            max_iterations=5,
+            max_iterations=10,
             handle_parsing_errors=True
         )
 

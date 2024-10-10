@@ -36,11 +36,13 @@ async def invoke_without_auth(
     request: Request,
     user_config: Annotated[dict, Depends(get_public_user_configuration)],
 ) -> Response:
+    
+    tools = await user_config["tools"](id_pasteleria)
 
     dynamic_api_handler = APIHandler(
         Agent(
             user_config["llm"],
-            user_config["tools"](id_pasteleria),
+            tools,
             user_config["prompt"]
         ).get_agent(),
         path="/atencion_cliente",
