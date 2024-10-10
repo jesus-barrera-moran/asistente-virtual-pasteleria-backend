@@ -1,17 +1,15 @@
 from uuid import UUID
 
 # from langchain.agents import Tool
-from langchain_community.utilities import SQLDatabase
 # from langchain_experimental.sql import SQLDatabaseChain
 # from llms.gpt_4o.llm import llm
 # import os
 
-# name=os.environ["TRANSACTIONS_DATABASE_NAME"]
-# instance_connection_name = os.environ["DATABASE_INSTANCE_CONNECTION_NAME"]
-# user = os.environ["DATABASE_INSTANCE_USER"]
-# password = os.environ["DATABASE_INSTANCE_PASSWORD"]
+from langchain_community.utilities import SQLDatabase
 
 from services.pastries_database import obtener_bases_datos_por_pasteleria
+
+from utils.exceptions import INTERNAL_SERVER_ERROR_EXCEPTION
 
 async def transacciones_db(id_pasteleria: UUID):
     # Get the database name, user and password from environment variables
@@ -22,7 +20,7 @@ async def transacciones_db(id_pasteleria: UUID):
     bases_de_datos_inventario = [base_de_datos for base_de_datos in bases_de_datos if base_de_datos["categoria"] == categoria]
 
     if not bases_de_datos_inventario:
-        raise Exception(f"Database {categoria} not found for bakery {id_pasteleria}")
+        raise INTERNAL_SERVER_ERROR_EXCEPTION(f"Database {categoria} not found for bakery {id_pasteleria}")
     
     name = bases_de_datos_inventario[0]["nombre"]
     user = bases_de_datos_inventario[0]["usuario"]
