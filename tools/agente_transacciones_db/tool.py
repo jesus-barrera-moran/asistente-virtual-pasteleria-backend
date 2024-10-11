@@ -5,8 +5,6 @@ from agents.sql_agent.agent import SQLAgent
 from llms.gpt_4o.llm import llm
 from tools.transacciones_db.tool import transacciones_db
 
-from utils.exceptions import INTERNAL_SERVER_ERROR_EXCEPTION
-
 async def agente_transacciones_db(id_pasteleria: UUID):
     try:
         db = await transacciones_db(id_pasteleria)

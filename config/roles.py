@@ -1,3 +1,6 @@
+import time
+import asyncio
+
 from llms.gpt_4o.llm import llm as gpt_4o_llm
 
 from tools.catalogo_doc.tool import tool as catalogo_doc
@@ -14,59 +17,87 @@ from prompts.client.prompt import prompt as client_prompt
 async def obtener_herramientas_propietario(id_pasteleria):
     tools = []
 
-    temporal_tools = [
-        await catalogo_doc(id_pasteleria),
-        await manual_doc(id_pasteleria),
-        await agente_inventario_db(id_pasteleria),
-        await agente_transacciones_db(id_pasteleria),
-    ]
+    # Mide el tiempo de ejecución
+    start_time = time.time()
 
-    for tool in temporal_tools:
-        if tool is not None:
-            tools.append(tool)
+    # Ejecuta todas las corutinas en paralelo usando asyncio.gather
+    temporal_tools = await asyncio.gather(
+        catalogo_doc(id_pasteleria),
+        manual_doc(id_pasteleria),
+        agente_inventario_db(id_pasteleria),
+        agente_transacciones_db(id_pasteleria)
+    )
+
+    # Filtra las herramientas que no son None
+    tools = [tool for tool in temporal_tools if tool is not None]
+
+    # Mide el tiempo total
+    total_time = time.time() - start_time
+    print(f"Tiempo total de obtención de herramientas (Propietario): {total_time} segundos")
 
     return tools
 
 async def obtener_herramientas_admin(id_pasteleria):
     tools = []
 
-    temporal_tools = [
-        await catalogo_doc(id_pasteleria),
-        await manual_doc(id_pasteleria),
-        await agente_inventario_db(id_pasteleria),
-        await agente_transacciones_db(id_pasteleria),
-    ]
+    # Mide el tiempo de ejecución
+    start_time = time.time()
 
-    for tool in temporal_tools:
-        if tool is not None:
-            tools.append(tool)
+    # Ejecuta todas las corutinas en paralelo usando asyncio.gather
+    temporal_tools = await asyncio.gather(
+        catalogo_doc(id_pasteleria),
+        manual_doc(id_pasteleria),
+        agente_inventario_db(id_pasteleria),
+        agente_transacciones_db(id_pasteleria)
+    )
+
+    # Filtra las herramientas que no son None
+    tools = [tool for tool in temporal_tools if tool is not None]
+
+    # Mide el tiempo total
+    total_time = time.time() - start_time
+    print(f"Tiempo total de obtención de herramientas (Admin): {total_time} segundos")
 
     return tools
 
 async def obtener_herramientas_empleado(id_pasteleria):
     tools = []
 
-    temporal_tools = [
-        await catalogo_doc(id_pasteleria),
-        await manual_doc(id_pasteleria),
-    ]
+    # Mide el tiempo de ejecución
+    start_time = time.time()
 
-    for tool in temporal_tools:
-        if tool is not None:
-            tools.append(tool)
+    # Ejecuta todas las corutinas en paralelo usando asyncio.gather
+    temporal_tools = await asyncio.gather(
+        catalogo_doc(id_pasteleria),
+        manual_doc(id_pasteleria)
+    )
+
+    # Filtra las herramientas que no son None
+    tools = [tool for tool in temporal_tools if tool is not None]
+
+    # Mide el tiempo total
+    total_time = time.time() - start_time
+    print(f"Tiempo total de obtención de herramientas (Empleado): {total_time} segundos")
 
     return tools
 
 async def obtener_herramientas_cliente(id_pasteleria):
     tools = []
 
-    temporal_tools = [
-        await catalogo_doc(id_pasteleria),
-    ]
+    # Mide el tiempo de ejecución
+    start_time = time.time()
 
-    for tool in temporal_tools:
-        if tool is not None:
-            tools.append(tool)
+    # Ejecuta la corutina en paralelo usando asyncio.gather
+    temporal_tools = await asyncio.gather(
+        catalogo_doc(id_pasteleria)
+    )
+
+    # Filtra las herramientas que no son None
+    tools = [tool for tool in temporal_tools if tool is not None]
+
+    # Mide el tiempo total
+    total_time = time.time() - start_time
+    print(f"Tiempo total de obtención de herramientas (Cliente): {total_time} segundos")
 
     return tools
 

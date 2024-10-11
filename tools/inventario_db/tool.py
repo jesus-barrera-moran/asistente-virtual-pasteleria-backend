@@ -1,9 +1,6 @@
 from uuid import UUID
 
-# from langchain.agents import Tool
-# from langchain_experimental.sql import SQLDatabaseChain
-# from llms.gpt_4o.llm import llm
-
+import asyncio
 from langchain_community.utilities import SQLDatabase
 
 from services.pastries_database import obtener_bases_datos_por_pasteleria
@@ -26,20 +23,18 @@ async def inventario_db(id_pasteleria: UUID):
     host = bases_de_datos_inventario[0]["servidor"]
     puerto = bases_de_datos_inventario[0]["puerto"]
 
-    # Create the connection string
+    # Crear la cadena de conexión
     conn_str = f"postgresql+pg8000://{user}:{password}@{host}:{puerto}/{name}"
 
-    # Create the SQLDatabase instance using the connection string
-    db = SQLDatabase.from_uri(conn_str)
+    # Intentar la conexión con un timeout de 5 segundos usando asyncio.wait_for
+    try:
+        db = await asyncio.wait_for(
+            asyncio.to_thread(SQLDatabase.from_uri, conn_str),  # Ejecutar en un hilo separado
+            timeout=5  # Timeout de 5 segundos
+        )
+        return db
 
-    return db
-
-    # # Crear la cadena SQLDatabaseChain usando la base de datos en la nube
-    # sql_chain = SQLDatabaseChain.from_llm(llm, db, verbose=True)
-
-    # # Crear la herramienta usando la cadena SQLDatabaseChain
-    # return Tool(
-    #     name="inventory_db",
-    #     func=sql_chain.run,
-    #     description="Useful when you need to answer questions about inventory's database."
-    # )
+    except asyncio.TimeoutError:
+        # Manejar el caso de timeout
+        print(f"Timeout al intentar conectar a la base de datos de transacciones para la pastelería {id_pasteleria}")
+        raise INTERNAL_SERVER_ERROR_EXCEPTION(f"Connection timeout for bakery {id_pasteleria}")
