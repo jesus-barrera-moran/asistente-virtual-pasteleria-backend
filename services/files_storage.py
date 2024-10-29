@@ -9,7 +9,7 @@ images_bucket_name = "asistentes-virtuales-pastelerias-imagenes-bucket"
 def read_file(folder_name, source_blob_name):
     bucket = client.get_bucket(documents_bucket_name)
     # Concatenar el nombre de la carpeta y el archivo para crear una jerarquía de carpetas
-    blob_name = f"{folder_name}/{source_blob_name}"
+    blob_name = f"{folder_name}/{source_blob_name}.txt"
     blob = bucket.blob(blob_name)
 
     # Verificar si el blob existe
@@ -25,7 +25,7 @@ def write_file(folder_name, destination_blob_name, content, isImage=False):
     bucket_name = images_bucket_name if isImage else documents_bucket_name
     bucket = client.get_bucket(bucket_name)
     # Concatenar el nombre de la carpeta y el archivo para simular una estructura de carpetas
-    blob_name = f"{folder_name}/{destination_blob_name}"
+    blob_name = f"{folder_name}/{destination_blob_name}{".txt" if not isImage else ""}"
     blob = bucket.blob(blob_name)
     # Subir el contenido
     blob.upload_from_string(content)
@@ -49,7 +49,7 @@ def get_all_files_from_pasteleria(folder_name):
             file_name_without_extension = os.path.splitext(file_name)[0]
 
             # Leer el contenido del archivo usando la función read_file
-            file_data = read_file(folder_name, file_name)
+            file_data = read_file(folder_name, file_name_without_extension)
             
             # Reemplazar el nombre con el nombre sin la extensión
             file_data["name"] = file_name_without_extension
