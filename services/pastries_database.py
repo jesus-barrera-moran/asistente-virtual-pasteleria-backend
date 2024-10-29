@@ -91,9 +91,9 @@ async def create_pasteleria_with_admin(
         # 6. Crear los documentos de la pastelería
         session.execute(
             text(
-                "INSERT INTO documento (id_pasteleria, nombre, bucket) "
-                "VALUES (:id_pasteleria, 'catalogo', 'catalogos'), "
-                "(:id_pasteleria, 'manual', 'manuales')"
+                "INSERT INTO documento (id_pasteleria, nombre, nombre_interfaz) "
+                "VALUES (:id_pasteleria, 'catalogo_productos', 'Catálogo de Productos'), "
+                "(:id_pasteleria, 'manual_recetas', 'Manual de Recetas')"
             ),
             {
                 "id_pasteleria": id_pasteleria
@@ -330,7 +330,7 @@ async def obtener_documentos_por_pasteleria(id_pasteleria: UUID):
         # Consulta para obtener los documentos asociados a la pastelería
         result_documentos = session.execute(
             text(
-                "SELECT id, nombre, bucket "
+                "SELECT id, nombre, nombre_interfaz "
                 "FROM documento "
                 "WHERE id_pasteleria = :id_pasteleria"
             ),
@@ -350,7 +350,7 @@ async def obtener_documentos_por_pasteleria(id_pasteleria: UUID):
             {
                 "id": documento.id,
                 "nombre": documento.nombre,
-                "bucket": documento.bucket,
+                "nombre_interfaz": documento.nombre_interfaz,
             }
             for documento in documentos
         ]
