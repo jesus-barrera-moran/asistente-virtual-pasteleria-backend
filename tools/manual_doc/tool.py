@@ -8,7 +8,6 @@ from langchain_community.document_loaders import TextLoader
 from langchain_text_splitters import CharacterTextSplitter
 
 from services.files_storage import read_file
-from config.general import general_configuration
 
 async def tool(id_pasteleria: UUID):
     id_pasteleria_str = str(id_pasteleria)
@@ -16,7 +15,7 @@ async def tool(id_pasteleria: UUID):
     os.makedirs(folder_name, exist_ok=True)
     file_data = read_file(
         id_pasteleria_str,
-        general_configuration["file_name"]["manual"]
+        "manual_recetas"
     )
 
     file_content = "No existen procesos disponibles en el manual."
@@ -25,7 +24,7 @@ async def tool(id_pasteleria: UUID):
     if file_data["content"]:
         file_content = file_data["content"].decode('utf-8')
 
-    file_path = os.path.join(folder_name, file_data["name"])
+    file_path = os.path.join(folder_name, f"{file_data['name']}.txt")
 
     with open(file_path, "w", encoding="utf-8") as file:
         file.write(file_content)
