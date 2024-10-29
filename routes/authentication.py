@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from models.token import Token
 from services.authentication import create_access_token, authenticate_user
 
-from utils.exceptions import INCORRECT_CREDENTIALS_EXCEPTION
+from utils.exceptions import INCORRECT_CREDENTIALS_EXCEPTION, INACTIVE_USER_EXCEPTION
 
 router = APIRouter()
 
@@ -17,6 +17,9 @@ async def login_for_access_token(
 
     if not user:
         raise INCORRECT_CREDENTIALS_EXCEPTION
+    
+    if user.deshabilitado:
+        raise INACTIVE_USER_EXCEPTION
     
     user_data = {
         "id_usuario": user.id,
