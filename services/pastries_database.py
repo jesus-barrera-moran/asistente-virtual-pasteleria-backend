@@ -93,7 +93,8 @@ async def create_pasteleria_with_admin(
             text(
                 "INSERT INTO documento (id_pasteleria, nombre, nombre_interfaz) "
                 "VALUES (:id_pasteleria, 'catalogo_productos', 'Catálogo de Productos'), "
-                "(:id_pasteleria, 'manual_recetas', 'Manual de Recetas')"
+                "(:id_pasteleria, 'manual_recetas', 'Manual de Recetas'), "
+                "(:id_pasteleria, 'informacion_general', 'Información General')"
             ),
             {
                 "id_pasteleria": id_pasteleria

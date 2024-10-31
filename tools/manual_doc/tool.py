@@ -20,16 +20,18 @@ async def tool(id_pasteleria: UUID):
 
     file_content = "No existen procesos disponibles en el manual."
 
-    # Verificar si el contenido del archivo está vacío
     if file_data["content"]:
-        file_content = file_data["content"].decode('utf-8')
+        try:
+            file_content = file_data["content"].decode('utf-8')
+        except UnicodeDecodeError:
+            file_content = file_data["content"].decode('cp1252', errors='ignore')
 
     file_path = os.path.join(folder_name, f"{file_data['name']}.txt")
 
     with open(file_path, "w", encoding="utf-8") as file:
         file.write(file_content)
 
-    loader = TextLoader(file_path)
+    loader = TextLoader(file_path, encoding='utf-8')
     documents = loader.load()
 
     text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=0)

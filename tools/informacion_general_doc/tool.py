@@ -15,10 +15,10 @@ async def tool(id_pasteleria: UUID):
     os.makedirs(folder_name, exist_ok=True)
     file_data = read_file(
         id_pasteleria_str,
-        "catalogo_productos"
+        "informacion_general"
     )
 
-    file_content = "No existen productos en el catálogo."
+    file_content = "No existe información general."
 
     if file_data["content"]:
         try:
@@ -43,8 +43,8 @@ async def tool(id_pasteleria: UUID):
 
     tool = create_retriever_tool(
         retriever,
-        "catalog_doc",
-        "Useful when you need to answer questions about pastry's catalog."
+        "general_information_doc",
+        "Useful when you need to answer questions about general information of the pastry.",
     )
 
     return tool
